@@ -38,7 +38,7 @@
         db_info/1,
         save_doc/2, save_doc/3,
         doc_exists/2,
-        open_doc/2, open_doc/3,
+        open_doc/2, open_doc/3, open_doc/4,
         delete_doc/2, delete_doc/3,
         save_docs/2, save_docs/3, delete_docs/2, delete_docs/3,
         lookup_doc_rev/2, lookup_doc_rev/3,
@@ -382,16 +382,21 @@ doc_exists(#db{server=Server, options=IbrowseOpts}=Db, DocId) ->
 open_doc(Db, DocId) ->
     open_doc(Db, DocId, []).
 
+%% @doc open a document 
+%% @equiv open_doc(Db, DocId, [], DecodeFun) 
+open_doc(Db, DocId, Params) ->
+    open_doc(Db, DocId, Params, fun (X) -> ejson:decode(X) end).
+
 %% @doc open a document
 %% Params is a list of query argument. Have a look in CouchDb API
 %% @spec open_doc(Db::db(), DocId::string(), Params::list()) 
 %%          -> {ok, Doc}|{error, Error}
-open_doc(#db{server=Server, options=IbrowseOpts}=Db, DocId, Params) ->
+open_doc(#db{server=Server, options=IbrowseOpts}=Db, DocId, Params, DecodeFun) ->
     DocId1 = couchbeam_util:encode_docid(DocId), 
     Url = make_url(Server, doc_url(Db, DocId1), Params),
     case db_request(get, Url, ["200", "201"], IbrowseOpts) of
         {ok, _, _, Body} ->
-            {ok, ejson:decode(Body)};
+            {ok, DecodeFun(Body)};
         Error ->
             Error
     end.

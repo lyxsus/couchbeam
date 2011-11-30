@@ -8,7 +8,7 @@
 
 -include("couchbeam.hrl").
 
--export([count/1, fetch/1, first/1, fold/2, foreach/2]).
+-export([count/1, fetch/1, fetch/2, first/1, fold/2, foreach/2]).
 
 %% spec count(View :: view()) -> integer()
 %% @doc get number of results in the view
@@ -32,15 +32,21 @@ count(#view{db=Db,url=Url, options=Options, method=Method, body=Body,
     end.
 
 
+%% @doc same as fetch/2.
+%% @spec fetch(View :: view()) -> term()
+%% @deprecated use {@link couchbeam_view:fetch/3} instead.
+fetch(View) ->
+	fetch(View, fun(X) -> ejson:decode(X) end).
+
 %% @doc get all results in a view.
 %% @spec fetch(View :: view()) -> term()
 %% @deprecated use {@link couchbeam_view:fetch/3} instead.
-fetch(#view{db=Db, url=Url, method=Method, body=Body, headers=Headers}) ->
+fetch(#view{db=Db, url=Url, method=Method, body=Body, headers=Headers}, DecodeFun) ->
     #db{options=IbrowseOpts} = Db,
     case couchbeam:db_request(Method, Url, ["200"], IbrowseOpts, Headers, 
             Body) of
         {ok, _, _, RespBody} ->
-            JsonBody = ejson:decode(RespBody),
+            JsonBody = DecodeFun(RespBody),
             {ok, JsonBody};
         Error ->
             Error
